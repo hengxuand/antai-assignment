@@ -38,8 +38,12 @@ def load_members():
 def create_member():
     print("Add new member")
     try:
-        username = request.form['username']
-        email = request.form['email']
+        username = request.args.get('username', default="", type=str)
+        email = request.args.get('email', default="", type=str)
+
+        if username == "" and email == "":
+            return jsonify(status='fail', message="need username and email")
+
         with sqlite3.connect(db) as conn:
             cur = conn.cursor()
             cur.execute(
@@ -57,23 +61,18 @@ def create_member():
 def update_member():
     print("update a member")
     try:
-        member_id = request.form['id']
-        username = request.form['username']
-        email = request.form['email']
+        member_id = request.args.get('id', default=0, type=int)
+        username = request.args.get('username', default="", type=str)
+        email = request.args.get('email', default="", type=str)
         with sqlite3.connect(db) as conn:
             cur = conn.cursor()
-            agent = cur.execute(
-                "select * from members where username = ?", (username,)).fetchall()
-            if len(agent) != 0:
-                cur.close()
-                return jsonify(status='fail', message=username + ' already exists.')
-            else:
-                cur.execute(
-                    "update members set username = ?, email = ? where id = ?", (username, email, member_id))
+            cur.execute(
+                "update members set username = ?, email = ? where id = ?", (username, email, member_id))
 
-                conn.commit()
-                cur.close()
-                return jsonify(status='success', message=username + ' has been updated.')
+            conn.commit()
+            cur.close()
+            return jsonify(status='success', message=member_id + ' has been updated.')
+
     except Exception as e:
         print(e)
         return jsonify(status='fail', message=e)
@@ -83,17 +82,17 @@ def update_member():
 def delete_member():
     print("delete a member")
     try:
-        member_id = request.form['id']
+        member_id = request.args.get('id', default=0, type=int)
         with sqlite3.connect(db) as conn:
             cur = conn.cursor()
             agent = cur.execute(
-                "select * from members where id = ?", (member_id)).fetchall()
+                "select * from members where id = ?", (member_id,)).fetchall()
             if len(agent) == 0:
                 cur.close()
                 return jsonify(status='fail', message=member_id + ' not exists.')
             else:
                 cur.execute(
-                    "delete from members where id = ?", (member_id))
+                    "delete from members where id = ?", (member_id,))
                 conn.commit()
                 cur.close()
                 return jsonify(status='success', message=member_id + ' has been deleted.')
@@ -127,7 +126,7 @@ def search_member():
 def greeting():
     print("send email")
     try:
-        member_id = request.form['id']
+        member_id = request.args.get('id', default=0, type=int)
         with sqlite3.connect(db) as conn:
             cur = conn.cursor()
             agent = cur.execute(
@@ -162,4 +161,4 @@ def greeting():
 
 # run the app.
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
